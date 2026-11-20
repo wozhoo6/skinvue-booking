@@ -1,0 +1,968 @@
+/* Clinic directory admin (/admin/clinics). Rendered inside AdminShell, so
+   it inherits the admin look; the variables below map this page's original
+   names onto the shared --mp-* / --mh-* theme tokens (theme.css). Scoped to
+   the container so they no longer leak onto the whole site via :root. */
+.admin-clinics-container {
+  --primary-blue: var(--mp-dark);
+  --accent-blue: var(--mh-teal-deep);
+  --light-accent: var(--mp-mint-chip);
+  --bg-light: var(--mp-bg);
+  --text-dark: var(--mp-ink);
+  --text-gray: var(--mp-ink-soft);
+  --text-muted: var(--mp-muted);
+  --border-mod: var(--mh-line);
+  --success-green: #2f9e6a;
+  --risk-high: var(--mh-coral);
+  --radius-lg: 24px;
+  --radius-md: 14px;
+  --shadow-sm: var(--mp-shadow);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--mp-ink);
+}
+
+.admin-clinics-container *,
+.admin-clinics-container *::before,
+.admin-clinics-container *::after {
+  box-sizing: border-box;
+}
+
+/* tabs + refresh on one row */
+.admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 1.25rem;
+}
+
+.admin-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--mp-ink);
+  box-shadow: inset 0 0 0 1px var(--mh-line);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.admin-clinics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 1.25rem;
+}
+
+.admin-clinics-header h1 {
+  margin: 0;
+  color: var(--primary-blue);
+  font-size: 1.4rem;
+}
+
+.admin-clinics-header p {
+  margin: 4px 0 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.admin-back-link {
+  color: var(--text-gray);
+  text-decoration: none;
+  background: white;
+  border: 1px solid var(--border-mod);
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+}
+
+.admin-key-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  border: 1px solid var(--border-mod);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  margin-bottom: 1rem;
+  max-width: 560px;
+}
+
+.admin-key-bar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.95rem;
+}
+
+.admin-key-bar button {
+  background: var(--primary-blue);
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.admin-key-bar button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-message {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  max-width: 560px;
+}
+
+.admin-message-ok {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.admin-message-error {
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Admin section tabs — Clinic List / Referral Performance / Referral Event */
+/* Log. Underline-style tabs keep the active section visually obvious while */
+/* staying compact and consistent with the rest of the admin UI.           */
+/* ---------------------------------------------------------------------- */
+
+.admin-tabs {
+  display: flex;
+  gap: 6px;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.admin-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-height: 40px;
+  background: #fff;
+  border: none;
+  box-shadow: inset 0 0 0 1px var(--border-mod);
+  border-radius: 999px;
+  padding: 0 16px;
+  color: var(--text-gray);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-tab:hover {
+  color: var(--text-dark);
+}
+
+.admin-tab-active,
+.admin-tab-active:hover {
+  background: var(--mp-dark);
+  color: #fff;
+  box-shadow: none;
+}
+
+.admin-clinics-grid {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.admin-clinics-list-panel,
+.admin-clinic-form-panel {
+  background: white;
+  border: 1px solid var(--border-mod);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 1.25rem;
+}
+
+.admin-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.admin-panel-header h2 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--primary-blue);
+}
+
+.admin-new-btn {
+  background: var(--light-accent);
+  color: var(--accent-blue);
+  border: 1px solid #cfe7d6;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.admin-clinics-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.admin-clinic-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid var(--border-mod);
+}
+
+.admin-clinic-row-active {
+  background: var(--light-accent);
+}
+
+.admin-clinic-row-select {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 10px 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--text-dark);
+}
+
+.admin-clinic-city {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Small "P1"/"P2"/... badge next to a clinic's name in the list, so Search
+   Priority is easy to spot without opening the edit form. */
+.admin-priority-badge {
+  background: var(--light-accent);
+  color: var(--accent-blue);
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid #cfe7d6;
+  flex-shrink: 0;
+}
+
+.admin-clinic-row-toggle {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px;
+}
+
+.admin-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.admin-status-active {
+  background: var(--success-green);
+}
+
+.admin-status-inactive {
+  background: var(--risk-high);
+}
+
+.admin-clinics-empty {
+  padding: 12px 6px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.admin-clinic-form-panel h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  color: var(--primary-blue);
+}
+
+.admin-clinic-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-form-row-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.admin-form-row label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-gray);
+  margin-bottom: 4px;
+}
+
+.admin-form-row input,
+.admin-form-row textarea {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--border-mod);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.admin-form-row textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+/* "Referral Settings" group (Appointment URL, Search Priority) — visually
+   set apart from the descriptive fields above it so these admin-controlled
+   referral fields are easy to find, per the explicit "make this field easy
+   to find" requirement. */
+.admin-form-section {
+  background: var(--light-accent);
+  border: 1px solid #cfe7d6;
+  border-radius: var(--radius-md);
+  padding: 14px 14px 4px;
+  margin: 4px 0;
+}
+
+.admin-form-section-title {
+  margin: 0 0 10px 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent-blue);
+}
+
+.admin-field-help {
+  margin: 6px 0 10px 0;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.admin-hours-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.admin-hours-row {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-hours-row span {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.admin-save-btn {
+  background: var(--primary-blue);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.admin-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-dermatologists-panel {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-mod);
+}
+
+.admin-dermatologists-panel h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.95rem;
+  color: var(--primary-blue);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-dermatologist-list {
+  list-style: none;
+  margin: 0 0 0.75rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-dermatologist-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-dark);
+  background: var(--bg-light);
+  border: 1px solid var(--border-mod);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+}
+
+.admin-dermatologist-list li button {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.admin-add-dermatologist-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-add-dermatologist-form input {
+  flex: 1 1 140px;
+  padding: 9px 11px;
+  border: 1px solid var(--border-mod);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+}
+
+.admin-add-dermatologist-form button {
+  background: var(--accent-blue);
+  color: white;
+  border: none;
+  padding: 9px 14px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.admin-report-panel {
+  background: white;
+  border: 1px solid var(--border-mod);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.admin-report-subtext {
+  margin: 0 0 1.1rem 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  max-width: 640px;
+}
+
+.admin-report-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 1.25rem;
+}
+
+.admin-stat-tile {
+  background: var(--bg-light);
+  border: 1px solid var(--border-mod);
+  border-radius: var(--radius-md);
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.admin-stat-tile-highlight {
+  background: var(--light-accent);
+  border-color: #cfe7d6;
+}
+
+.admin-stat-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--primary-blue);
+}
+
+.admin-stat-label {
+  margin-top: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+.admin-report-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.admin-report-table th,
+.admin-report-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-mod);
+  white-space: nowrap;
+}
+
+.admin-report-table th {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.admin-report-total-cell {
+  font-weight: 700;
+  color: var(--primary-blue);
+}
+
+.admin-log-panel-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-log-filters {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 1.1rem;
+}
+
+.admin-log-filters select {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--border-mod);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  box-sizing: border-box;
+  font-family: inherit;
+  background: white;
+}
+
+.admin-log-filters-clear {
+  display: flex;
+  align-items: flex-end;
+}
+
+.admin-log-clear-btn {
+  width: 100%;
+  background: white;
+  border: 1px solid var(--border-mod);
+  color: var(--text-gray);
+  padding: 9px 11px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.admin-log-clear-btn:hover {
+  border-color: var(--text-muted);
+}
+
+.admin-log-total {
+  margin: 0.75rem 0 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Group by Clinic / Order by Date — the lightweight switch for the Referral
+   Event Log tab. Group by Clinic is the default view. */
+.admin-log-view-toggle {
+  display: inline-flex;
+  background: var(--bg-light);
+  border: 1px solid var(--border-mod);
+  border-radius: var(--radius-md);
+  padding: 3px;
+  gap: 3px;
+  margin-bottom: 1.1rem;
+}
+
+.admin-log-view-btn {
+  background: transparent;
+  border: none;
+  padding: 7px 14px;
+  border-radius: calc(var(--radius-md) - 3px);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.admin-log-view-btn:hover {
+  color: var(--text-gray);
+}
+
+.admin-log-view-btn.active {
+  background: white;
+  color: var(--primary-blue);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Group by Clinic: one card per clinic with a totals/breakdown summary,
+   expandable to that clinic's individual events. */
+.admin-log-grouped {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-log-clinic-group {
+  border: 1px solid var(--border-mod);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.admin-log-clinic-group-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--bg-light);
+  border: none;
+  padding: 12px 14px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.admin-log-clinic-group-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.admin-log-clinic-group-name {
+  font-weight: 700;
+  color: var(--primary-blue);
+}
+
+.admin-log-clinic-group-location {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.admin-log-clinic-group-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.admin-log-clinic-group-total {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-gray);
+  white-space: nowrap;
+}
+
+.admin-log-chevron {
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.admin-log-chevron.open {
+  transform: rotate(180deg);
+}
+
+.admin-log-clinic-group-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 14px;
+}
+
+.admin-log-breakdown-pill {
+  background: var(--light-accent);
+  color: var(--accent-blue);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.admin-log-clinic-group-table {
+  border-top: 1px solid var(--border-mod);
+  padding: 0 14px 10px;
+}
+
+.admin-log-clinic-group-table .admin-report-table {
+  font-size: 0.82rem;
+}
+
+@media (max-width: 860px) {
+  .admin-clinics-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-form-row-group {
+    grid-template-columns: 1fr;
+  }
+  .admin-report-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .admin-log-filters {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-report-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .admin-log-filters {
+    grid-template-columns: 1fr;
+  }
+  .admin-log-panel-actions {
+    flex-wrap: wrap;
+  }
+  .admin-log-clinic-group-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .admin-log-clinic-group-meta {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .admin-tab {
+    padding: 9px 12px;
+    font-size: 0.85rem;
+  }
+}
+
+/* ===== Matching the shared admin look ===== */
+.admin-clinics-list-panel,
+.admin-clinic-form-panel,
+.admin-report-panel {
+  padding: 1.4rem;
+}
+
+.admin-clinics-list-panel h2,
+.admin-clinic-form-panel h2,
+.admin-report-panel h2 {
+  letter-spacing: -0.02em;
+}
+
+.admin-clinic-row {
+  border-radius: 12px;
+}
+
+.admin-clinic-row-select {
+  font-family: inherit;
+  color: var(--mp-ink);
+}
+
+.admin-form-row input,
+.admin-form-row textarea,
+.admin-form-row select,
+.admin-add-dermatologist-form input,
+.admin-log-filters input,
+.admin-log-filters select {
+  min-height: 44px;
+  border-radius: 12px;
+  background: var(--mp-bg);
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--mp-ink);
+}
+
+.admin-form-row input:focus,
+.admin-form-row textarea:focus,
+.admin-form-row select:focus,
+.admin-add-dermatologist-form input:focus,
+.admin-log-filters input:focus,
+.admin-log-filters select:focus {
+  outline: none;
+  border-color: var(--mh-teal-deep);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(43, 124, 135, 0.15);
+}
+
+.admin-save-btn,
+.admin-add-dermatologist-form button {
+  min-height: 48px;
+  border-radius: 16px;
+  font-family: inherit;
+  box-shadow: 0 10px 20px -12px rgba(11, 74, 78, 0.9);
+}
+
+.admin-add-dermatologist-form button {
+  background: var(--mp-dark);
+}
+
+.admin-new-btn {
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-family: inherit;
+}
+
+.admin-stat-tile {
+  border-radius: 18px;
+  background: #fff;
+}
+
+.admin-stat-tile-highlight {
+  border-color: var(--mh-teal-deep);
+  box-shadow: 0 0 0 3px rgba(43, 124, 135, 0.1);
+}
+
+.admin-message {
+  border-radius: 14px;
+}
+
+@media (hover: hover) {
+  .admin-tab:not(.admin-tab-active):hover,
+  .admin-refresh-btn:hover:not(:disabled) {
+    background: var(--mp-mint-chip);
+  }
+
+  .admin-save-btn:hover:not(:disabled),
+  .admin-add-dermatologist-form button:hover {
+    background: #083c40;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-toolbar {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .admin-refresh-btn {
+    align-self: flex-end;
+  }
+
+  .admin-clinics-list-panel,
+  .admin-clinic-form-panel,
+  .admin-report-panel {
+    padding: 1rem;
+    border-radius: 20px;
+  }
+
+  .admin-clinics-list {
+    max-height: 45vh;
+  }
+}
+
+/* ===== Clinic List search ===== */
+.admin-clinic-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.admin-clinic-search > svg {
+  position: absolute;
+  left: 14px;
+  color: var(--mp-muted);
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+.admin-clinic-search input {
+  width: 100%;
+  height: 44px;
+  padding: 0 40px 0 38px;
+  border: 1px solid var(--border-mod);
+  border-radius: 14px;
+  background: var(--mp-bg);
+  color: var(--mp-ink);
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.admin-clinic-search input:focus {
+  outline: none;
+  border-color: var(--mh-teal-deep);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(43, 124, 135, 0.15);
+}
+
+.admin-clinic-search input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+.admin-clinic-search button {
+  position: absolute;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--mp-muted);
+  cursor: pointer;
+}
+
+.admin-clinic-search button:hover {
+  background: var(--mp-mint-chip);
+  color: var(--mp-ink);
+}

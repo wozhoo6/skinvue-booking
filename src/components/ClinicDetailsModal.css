@@ -1,0 +1,547 @@
+/* Clinic details sheet, opened from "View details" on the referral page.
+   Same frame as the photo sheet (css/GuidelinesModal.css): blurred teal
+   backdrop, mint dialog, white cards inside. Bottom sheet on phones,
+   centered dialog from 561px. Classes prefixed cd-. */
+
+.cd-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overscroll-behavior: contain;
+  background: rgba(11, 74, 78, 0.4);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  animation: cd-fade 0.25s ease-out;
+}
+
+.cd-overlay *,
+.cd-overlay *::before,
+.cd-overlay *::after {
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.cd-dialog {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 620px;
+  /* % of the fixed overlay = the visible screen minus its padding, so the
+     dialog never runs under a phone's browser bars (vh/dvh can) */
+  max-height: 100%;
+  overflow: hidden;
+  border-radius: 26px;
+  background: var(--mp-bg);
+  box-shadow:
+    0 24px 48px -12px rgba(15, 23, 42, 0.28),
+    0 8px 16px -6px rgba(15, 23, 42, 0.08);
+  color: var(--mp-ink);
+  line-height: 1.5;
+}
+
+.cd-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--mp-ink);
+  box-shadow: var(--mp-shadow);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.cd-close:focus-visible,
+.cd-btn:focus-visible,
+.cd-phone a:focus-visible,
+.cd-link:focus-visible {
+  outline: 2px solid var(--mh-teal-deep);
+  outline-offset: 2px;
+}
+
+/* ===== HEADER ===== */
+.cd-header {
+  flex-shrink: 0;
+  padding: 2rem 2rem 1rem;
+  padding-right: calc(2rem + 44px);
+}
+
+.cd-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 0.6rem;
+}
+
+.cd-badge {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--mp-ink-soft);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.cd-badge.is-step {
+  background: var(--mp-mint-chip);
+  color: var(--mp-ink);
+}
+
+.cd-badge.is-sponsored {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--mp-dark);
+  color: var(--mp-mint);
+}
+
+.cd-badge.is-sponsored svg {
+  fill: currentColor;
+}
+
+.cd-title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  color: var(--mp-ink);
+}
+
+.cd-subtitle {
+  margin: 0.5rem 0 0;
+  font-size: 0.92rem;
+  color: var(--mp-muted);
+}
+
+/* ===== BODY (scrolls) ===== */
+.cd-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.25rem 2rem 1.5rem;
+}
+
+.cd-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 0;
+  text-align: center;
+}
+
+.cd-state p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--mp-muted);
+}
+
+.cd-state-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: #fdecec;
+  color: var(--mh-coral);
+}
+
+.cd-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid rgba(15, 61, 64, 0.15);
+  border-top-color: var(--mp-dark);
+  border-radius: 50%;
+  animation: cd-spin 0.8s linear infinite;
+}
+
+/* ===== ACTIONS: two dark buttons on a white tray ===== */
+.cd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--mh-line);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: var(--mp-shadow);
+}
+
+.cd-actions .cd-btn {
+  flex: 1 1 200px;
+}
+
+.cd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 18px;
+  border-radius: 20px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.cd-btn:active {
+  transform: scale(0.97);
+}
+
+.cd-btn.primary {
+  background: var(--mp-dark);
+  color: #fff;
+  box-shadow: 0 10px 20px -12px rgba(11, 74, 78, 0.9);
+}
+
+.cd-btn.slate {
+  background: #1f2d3d;
+  color: #fff;
+  box-shadow: 0 10px 20px -12px rgba(31, 45, 61, 0.9);
+}
+
+.cd-phone {
+  margin-top: 10px;
+}
+
+.cd-phone a {
+  color: var(--mp-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* ===== SECTIONS ===== */
+.cd-section {
+  margin-top: 1.5rem;
+}
+
+.cd-section-title {
+  margin: 0 0 0.6rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--mp-ink);
+}
+
+.cd-card {
+  margin: 0;
+  padding: 16px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--mp-shadow);
+}
+
+.cd-doctors {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cd-doctor {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--mp-shadow);
+}
+
+.cd-doctor-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: var(--mp-mint-chip);
+  color: var(--mp-ink);
+}
+
+.cd-doctor-name {
+  margin: 0;
+  font-weight: 600;
+  color: var(--mp-ink);
+}
+
+.cd-doctor-role {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--mp-muted);
+}
+
+.cd-doctor-bio {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: var(--mp-ink-soft);
+}
+
+.cd-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cd-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--mp-ink);
+  font-size: 0.82rem;
+  font-weight: 500;
+  box-shadow: var(--mp-shadow);
+}
+
+.cd-address {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--mp-ink-soft);
+}
+
+.cd-address svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--mh-teal-deep);
+}
+
+.cd-map {
+  overflow: hidden;
+  margin-top: 12px;
+  border-radius: 16px;
+  background: var(--mp-bg);
+  aspect-ratio: 16 / 9;
+}
+
+.cd-map iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.cd-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  color: var(--mh-teal-deep);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 6px;
+}
+
+.cd-hours {
+  padding: 6px 16px;
+  list-style: none;
+}
+
+.cd-hours li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--mh-line);
+  font-size: 0.88rem;
+  color: var(--mp-ink-soft);
+}
+
+.cd-hours li:last-child {
+  border-bottom: 0;
+}
+
+.cd-hours li span:last-child {
+  text-align: right;
+}
+
+.cd-hours li.is-today {
+  font-weight: 600;
+  color: var(--mp-ink);
+}
+
+.cd-hours em {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--mp-mint-chip);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.cd-empty {
+  font-size: 0.88rem;
+  color: var(--mp-muted);
+  overflow-wrap: anywhere;
+}
+
+.cd-privacy {
+  margin: 1.5rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--mp-muted);
+  text-align: center;
+}
+
+@media (hover: hover) {
+  .cd-close:hover {
+    background: var(--mp-mint-chip);
+  }
+
+  .cd-btn.primary:hover {
+    background: #083c40;
+    box-shadow: 0 14px 24px -12px rgba(11, 74, 78, 0.95);
+  }
+
+  .cd-btn.slate:hover {
+    background: #16212e;
+    box-shadow: 0 14px 24px -12px rgba(31, 45, 61, 0.95);
+  }
+
+  .cd-phone a:hover {
+    text-decoration: underline;
+  }
+
+  .cd-link:hover {
+    text-decoration: underline;
+  }
+}
+
+/* ===== PHONES: bottom sheet ===== */
+@media (max-width: 560px) {
+  .cd-overlay {
+    align-items: flex-end;
+    padding: max(12px, env(safe-area-inset-top)) 0 0;
+  }
+
+  .cd-dialog {
+    max-width: none;
+    border-radius: 26px 26px 0 0;
+    animation: cd-sheet 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .cd-header {
+    padding: 1.5rem 20px 0.85rem;
+    padding-right: calc(20px + 44px);
+  }
+
+  .cd-title {
+    font-size: 1.4rem;
+  }
+
+  .cd-body {
+    padding: 0.25rem 20px calc(1.25rem + env(safe-area-inset-bottom));
+  }
+
+  .cd-actions .cd-btn {
+    flex-basis: 100%;
+  }
+}
+
+/* ===== SMALL OR SHORT SCREENS: the whole sheet scrolls =====
+   With a fixed header, a long clinic name or description left almost no
+   room for the details on small phones and in landscape. Here the header
+   scrolls with the body, and the close button stays pinned in view. */
+@media (max-width: 560px), (max-height: 560px) {
+  .cd-dialog {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cd-close {
+    position: sticky;
+    top: 12px;
+    z-index: 2;
+    flex-shrink: 0;
+    align-self: flex-end;
+    margin: 12px 12px -48px 0;
+  }
+
+  .cd-body {
+    flex: none;
+    min-height: auto;
+    overflow: visible;
+  }
+}
+
+@keyframes cd-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cd-sheet {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes cd-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cd-overlay,
+  .cd-dialog {
+    animation: none;
+  }
+
+  .cd-spinner {
+    animation-duration: 1.6s;
+  }
+}
+
+/* ===== LONG TEXT never pushes the sheet wider than the screen ===== */
+.cd-title,
+.cd-subtitle,
+.cd-address span,
+.cd-doctor-name,
+.cd-doctor-bio,
+.cd-chip,
+.cd-hours li span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cd-dialog > div,
+.cd-doctor > div {
+  min-width: 0;
+}
+
+@media (max-width: 380px) {
+  .cd-btn {
+    white-space: normal;
+    text-align: center;
+  }
+
+  .cd-hours li {
+    gap: 10px;
+  }
+}

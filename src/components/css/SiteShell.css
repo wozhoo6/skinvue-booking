@@ -1,0 +1,469 @@
+/* Page frame: phone top bar + floating bottom nav below 769px, sticky header
+   + footer from 769px up. Both sets are always rendered; CSS shows one. */
+
+.mp-canvas {
+  flex: 1 0 auto;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding:
+    calc(16px + env(safe-area-inset-top))
+    calc(20px + env(safe-area-inset-right))
+    /* nav (14px gap + 74px) + camera button above it (28px + 5px ring) + 24px clearance */
+    calc(145px + env(safe-area-inset-bottom))
+    calc(20px + env(safe-area-inset-left));
+}
+
+/* ===== PHONE TOP BAR ===== */
+.mp-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.mp-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.9rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--mp-ink);
+}
+
+.mp-logo-mark {
+  width: 40px;
+  height: 40px;
+  color: var(--mp-ink);
+}
+
+/* ===== PHONE BOTTOM NAV =====
+   White pill with thin gray outline icons; the active tab turns solid. The
+   camera button floats over the center of the top edge. */
+.mp-nav {
+  position: fixed;
+  left: calc(16px + env(safe-area-inset-left));
+  right: calc(16px + env(safe-area-inset-right));
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  /* above .mp-backdrop so the More tab's X stays visible and tappable */
+  z-index: 50;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  align-items: center;
+  max-width: 420px;
+  height: 74px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.mp-nav::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 61, 64, 0.04), 0 18px 40px -12px rgba(15, 61, 64, 0.18);
+}
+
+.mp-shell .mp-nav-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--mp-nav-idle) !important;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.mp-shell .mp-nav-tab.is-active {
+  color: var(--mp-ink) !important;
+  font-weight: 600;
+}
+
+/* More tab: the brand mark rotates out and the X rotates in while open */
+.mh-menu-toggle-icon {
+  display: grid;
+}
+
+.mh-menu-toggle-icon svg {
+  grid-area: 1 / 1;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+}
+
+.mh-menu-toggle-icon svg:last-child {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.6);
+}
+
+.mp-nav-more[data-open='true'] .mh-menu-toggle-icon svg:first-child {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.6);
+}
+
+.mp-nav-more[data-open='true'] .mh-menu-toggle-icon svg:last-child {
+  opacity: 1;
+  transform: rotate(0) scale(1);
+}
+
+/* holds the middle column; the button itself is centered on the bar's top edge */
+.mp-nav-fab-slot {
+  align-self: stretch;
+}
+
+.mp-nav-fab {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--mp-dark);
+  color: var(--mp-mint) !important;
+  box-shadow: 0 0 0 5px #fff, 0 12px 24px -10px rgba(11, 74, 78, 0.55);
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: transform 0.15s ease;
+}
+
+.mp-nav-fab:active {
+  transform: translate(-50%, -50%) scale(0.94);
+}
+
+/* Menu: opened from the nav's More tab, this card slides up out from behind
+   the bar and settles above it, right edges aligned. Offsets mirror .mp-nav
+   (14px gap, 74px tall, 16px inset, 420px max width) plus the camera button
+   poking 28px + its 5px ring above the bar. */
+.mp-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(11, 74, 78, 0.4);
+  animation: mh-fade 0.2s ease-out;
+}
+
+.mp-menu-card {
+  position: absolute;
+  bottom: calc(14px + 74px + 33px + 12px + env(safe-area-inset-bottom));
+  right: max(
+    calc(16px + env(safe-area-inset-right)),
+    calc((100vw - 420px) / 2)
+  );
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: min(calc(100vw - 40px), 300px);
+  padding: 8px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--mp-shadow);
+  transform-origin: bottom right;
+  animation: mp-menu-rise 0.48s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes mp-menu-rise {
+  0% { opacity: 0; transform: translateY(90px) scale(0.2); }
+  25% { opacity: 1; }
+  65% { opacity: 1; transform: translateY(-4px) scale(1); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.mp-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 12px;
+  border: 0;
+  border-radius: 14px;
+  background: none;
+  color: var(--mp-ink) !important;
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  animation: mh-menu-item-in 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.mp-menu-row:nth-child(1) { animation-delay: 0.14s; }
+.mp-menu-row:nth-child(2) { animation-delay: 0.22s; }
+
+.mp-menu-row:active {
+  background: var(--mp-mint-chip);
+}
+
+/* ===== DESKTOP HEADER ===== */
+.sv-header,
+.sv-footer {
+  display: none;
+}
+
+.sv-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--mp-ink) !important;
+  text-decoration: none;
+}
+
+.sv-brand .mp-logo-mark {
+  width: 34px;
+  height: 34px;
+}
+
+.sv-brand--small {
+  font-size: 1.25rem;
+}
+
+.sv-brand--small .mp-logo-mark {
+  width: 28px;
+  height: 28px;
+}
+
+@media (min-width: 769px) {
+  .mp-topbar,
+  .mp-nav,
+  .mp-backdrop {
+    display: none;
+  }
+
+  .sv-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: block;
+    height: var(--sv-header-h);
+    border-bottom: 1px solid rgba(15, 61, 64, 0.06);
+    background: rgba(243, 248, 244, 0.82);
+    -webkit-backdrop-filter: saturate(1.4) blur(14px);
+    backdrop-filter: saturate(1.4) blur(14px);
+  }
+
+  .sv-header-inner {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    max-width: var(--sv-container);
+    height: 100%;
+    margin: 0 auto;
+    padding: 0 40px;
+  }
+
+  .sv-nav {
+    display: flex;
+    gap: 4px;
+  }
+
+  .sv-nav-link,
+  .mp-shell .sv-text-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 999px;
+    background: none;
+    color: var(--mp-ink-soft) !important;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .sv-nav-link:hover,
+  .mp-shell .sv-text-btn:hover {
+    background: var(--mp-mint-chip);
+    color: var(--mp-ink) !important;
+  }
+
+  .sv-nav-link.is-active {
+    background: #fff;
+    box-shadow: var(--mp-shadow);
+    color: var(--mp-ink) !important;
+    font-weight: 600;
+  }
+
+  .sv-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+  }
+
+  .mp-shell .sv-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 44px;
+    min-height: 44px;
+    margin-left: 8px;
+    padding: 0 20px 0 16px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--mp-dark);
+    color: #fff;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: 0 8px 16px -10px rgba(15, 61, 64, 0.8);
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+  }
+
+  .sv-cta svg {
+    color: var(--mp-mint);
+  }
+
+  .mp-shell .sv-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 24px -12px rgba(15, 61, 64, 0.85);
+  }
+
+  .mp-shell .sv-cta:active {
+    transform: scale(0.97);
+  }
+
+  /* ===== DESKTOP CANVAS ===== */
+  .mp-canvas {
+    max-width: var(--sv-container);
+    padding: 56px 40px 96px;
+  }
+
+  /* ===== DESKTOP FOOTER ===== */
+  .sv-footer {
+    display: block;
+    border-top: 1px solid rgba(15, 61, 64, 0.08);
+    background: #fff;
+  }
+
+  .sv-footer-inner {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 48px;
+    max-width: var(--sv-container);
+    margin: 0 auto;
+    padding: 40px 40px 24px;
+  }
+
+  .sv-footer-about {
+    max-width: 46ch;
+  }
+
+  .sv-footer-about p {
+    margin: 12px 0 0;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: var(--mp-muted);
+  }
+
+  .sv-footer-links {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    gap: 10px 40px;
+  }
+
+  .sv-footer-links a,
+  .mp-shell .sv-footer-links button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--mp-ink-soft) !important;
+    font-size: 0.92rem;
+    font-weight: 500;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .sv-footer-links a:hover,
+  .mp-shell .sv-footer-links button:hover {
+    color: var(--mp-ink) !important;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .sv-footer-copy {
+    max-width: var(--sv-container);
+    margin: 0 auto;
+    padding: 0 40px 32px;
+    font-size: 0.8rem;
+    color: var(--mp-muted);
+  }
+}
+
+/* Narrow desktops/tablets: tighter header so everything stays on one line */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .sv-header-inner {
+    gap: 16px;
+    padding: 0 24px;
+  }
+
+  .sv-nav-link,
+  .mp-shell .sv-text-btn {
+    padding: 8px 10px;
+  }
+
+  .sv-text-btn svg {
+    display: none;
+  }
+
+  .mp-canvas {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .sv-footer-inner,
+  .sv-footer-copy {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 919px) {
+  .mp-shell .sv-cta {
+    padding: 0;
+  }
+
+  .sv-cta-label {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-backdrop,
+  .mp-menu-card,
+  .mp-menu-row {
+    animation: none;
+  }
+
+  .mh-menu-toggle-icon svg,
+  .mp-nav-fab,
+  .mp-shell .mp-nav-tab,
+  .sv-nav-link,
+  .mp-shell .sv-text-btn,
+  .mp-shell .sv-cta {
+    transition: none;
+  }
+}

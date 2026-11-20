@@ -1,0 +1,625 @@
+/* Dermatologist referral ("Book a Derma"). Sits inside .mp-shell (SiteShell)
+   and uses the --mp-* tokens, type scale and card shapes from theme.css, the
+   same way the results page does. Phones first; desktop layout at the end.
+   Classes prefixed rf-. */
+
+/* ===== HEADER ===== */
+.rf-greeting {
+  max-width: 15ch;
+  margin-bottom: 12px;
+}
+
+.rf-lede {
+  margin: 0 0 24px;
+  max-width: 40ch;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--mp-muted);
+}
+
+/* ===== SHARED PIECES ===== */
+.rf-card {
+  margin: 0;
+  padding: 18px;
+  border-radius: 22px;
+  background: var(--mp-card);
+  box-shadow: var(--mp-shadow);
+}
+
+.rf-section-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--mp-ink);
+}
+
+/* Buttons share the results page's shape; .mp-shell prefix beats the
+   shell's `button { color: inherit }` reset */
+.mp-shell .rf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 20px;
+  font-size: 1rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.mp-shell .rf-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.mp-shell .rf-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.mp-shell .rf-btn.primary {
+  width: 100%;
+  background: var(--mp-dark);
+  color: #fff;
+  box-shadow: 0 10px 20px -12px rgba(11, 74, 78, 0.9);
+}
+
+/* second dark button: deep slate, so the pair reads as two clear choices */
+.mp-shell .rf-btn.slate {
+  width: 100%;
+  background: #1f2d3d;
+  color: #fff;
+  box-shadow: 0 10px 20px -12px rgba(31, 45, 61, 0.9);
+}
+
+.rf-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid rgba(15, 61, 64, 0.15);
+  border-top-color: var(--mp-dark);
+  border-radius: 50%;
+  animation: rf-spin 0.8s linear infinite;
+}
+
+.rf-spinner.is-light {
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+}
+
+@keyframes rf-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===== SEARCH CARD ===== */
+.rf-search {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+
+/* Location failure: has to be impossible to miss on a phone and say what to DO,
+   so it gets a strong border, a bold headline and numbered steps. */
+.rf-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 16px;
+  border: 2px solid #d9534f;
+  border-radius: 16px;
+  background: #fdecec;
+  color: #7a2326;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.rf-alert svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #c0392b;
+}
+
+.rf-alert-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.rf-alert-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #8f1d21;
+}
+
+.rf-alert-intro {
+  margin: 0;
+}
+
+.rf-alert-steps {
+  margin: 0;
+  padding-left: 1.4em;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rf-alert-steps li::marker {
+  font-weight: 800;
+  color: #8f1d21;
+}
+
+.rf-alert-fallback {
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid rgba(143, 29, 33, 0.2);
+  font-size: 0.88rem;
+  color: #a43f42;
+}
+
+.rf-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--mp-muted);
+  font-size: 0.8rem;
+}
+
+.rf-divider::before,
+.rf-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--mh-line);
+}
+
+.rf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.rf-field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--mp-ink);
+}
+
+.rf-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.rf-input-row input {
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  padding: 0 16px;
+  border: 1px solid var(--mh-line);
+  border-radius: 16px;
+  background: var(--mp-bg);
+  color: var(--mp-ink);
+  font: inherit;
+  font-size: 1rem;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.rf-input-row input::placeholder {
+  color: var(--mp-nav-idle);
+}
+
+.rf-input-row input:focus {
+  outline: none;
+  border-color: var(--mh-teal-deep);
+  background: #fff;
+}
+
+.mp-shell .rf-search-btn {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--mp-dark);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.2s ease;
+}
+
+.mp-shell .rf-search-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.mp-shell .rf-search-btn:disabled {
+  background: var(--mp-mint-chip);
+  color: var(--mp-nav-idle);
+  cursor: default;
+}
+
+.rf-note {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--mp-muted);
+}
+
+/* ===== RESULTS ===== */
+.rf-results {
+  margin-top: 32px;
+}
+
+.rf-results-head {
+  margin-bottom: 14px;
+}
+
+.rf-results-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  color: var(--mp-muted);
+}
+
+.rf-count {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--mp-mint-chip);
+  color: var(--mp-ink);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.rf-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.rf-state p {
+  max-width: 36ch;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--mp-muted);
+}
+
+.rf-state-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: var(--mp-mint-chip);
+  color: var(--mp-ink);
+}
+
+.rf-state-icon.is-warning {
+  background: #fdecec;
+  color: var(--mh-coral);
+}
+
+/* ===== CLINIC CARDS ===== */
+.rf-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rf-clinic {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  border: 1px solid var(--mh-line);
+  border-radius: 24px;
+  background: var(--mp-card);
+  box-shadow: var(--mp-shadow);
+  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+}
+
+
+.rf-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.rf-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--mp-bg);
+  color: var(--mp-ink-soft);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.rf-badge.is-sponsored {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--mh-teal-deep);
+  color: #fff;
+}
+
+.rf-badge.is-sponsored svg {
+  fill: currentColor;
+}
+
+.rf-clinic-name {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  color: var(--mp-ink);
+}
+
+.rf-clinic-doctor {
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--mp-ink-soft);
+}
+
+.rf-clinic-doctor span {
+  color: var(--mp-muted);
+  font-weight: 400;
+}
+
+.rf-facts {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rf-facts li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--mp-ink-soft);
+}
+
+.rf-facts svg {
+  flex-shrink: 0;
+  margin-top: -1px;
+  color: var(--mh-teal-deep);
+}
+
+.rf-truncate {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rf-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rf-chip {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--mp-mint-chip);
+  color: var(--mp-ink);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.rf-chip.is-more {
+  background: var(--mp-bg);
+  color: var(--mp-muted);
+}
+
+.rf-clinic-actions {
+  display: grid;
+  /* Book Appointment is the longer label, so it gets the wider column */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 20px;
+}
+
+.rf-clinic-actions.is-single {
+  grid-template-columns: 1fr;
+}
+
+.mp-shell .rf-clinic-actions .rf-btn {
+  min-width: 0;
+  padding: 0 10px;
+  font-size: 0.92rem;
+}
+
+/* ===== SPONSORED: same white card, set apart by a teal border ===== */
+.rf-clinic.is-sponsored {
+  /* 1px border like every card; the 2nd teal pixel and the glow are shadows,
+     so a sponsored card is exactly the same size as the others */
+  border-color: var(--mh-teal-deep);
+  background: var(--mp-card);
+  box-shadow:
+    0 0 0 1px var(--mh-teal-deep),
+    0 0 0 5px rgba(43, 124, 135, 0.1),
+    0 18px 36px -20px rgba(11, 74, 78, 0.45);
+}
+
+/* ===== FOOTNOTE ===== */
+.rf-privacy {
+  margin: 28px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--mp-muted);
+  text-align: center;
+}
+
+/* ===== HOVER ===== */
+@media (hover: hover) {
+  .mp-shell .rf-btn.primary:hover:not(:disabled) {
+    background: #083c40;
+    box-shadow: 0 14px 24px -12px rgba(11, 74, 78, 0.95);
+  }
+
+  .mp-shell .rf-btn.slate:hover {
+    background: #16212e;
+    box-shadow: 0 14px 24px -12px rgba(31, 45, 61, 0.95);
+  }
+
+  .rf-clinic:hover {
+    transform: translateY(-2px);
+    border-color: #cfe0e3;
+    box-shadow: var(--mp-shadow-hover);
+  }
+
+  .rf-clinic.is-sponsored:hover {
+    border-color: var(--mh-teal-deep);
+    box-shadow:
+      0 0 0 1px var(--mh-teal-deep),
+      0 0 0 5px rgba(43, 124, 135, 0.16),
+      0 24px 44px -20px rgba(11, 74, 78, 0.5);
+  }
+}
+
+/* ===== DESKTOP ===== */
+@media (min-width: 769px) {
+  .rf-greeting {
+    max-width: 20ch;
+    margin-bottom: 16px;
+  }
+
+  .rf-lede {
+    max-width: 60ch;
+    margin-bottom: 40px;
+    font-size: 1.05rem;
+  }
+
+  /* search card left (sticky under the header), results right */
+  .rf-layout {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    align-items: start;
+    gap: 32px;
+  }
+
+  .rf-search {
+    position: sticky;
+    top: calc(var(--sv-header-h) + 24px);
+    padding: 24px;
+    border-radius: 26px;
+  }
+
+  .rf-results {
+    margin-top: 0;
+  }
+
+  .rf-results-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px 16px;
+    margin-bottom: 18px;
+  }
+
+  .rf-section-title {
+    font-size: 1.6rem;
+    letter-spacing: -0.03em;
+  }
+
+  .rf-results-label {
+    margin: 0;
+  }
+
+  .rf-list {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  .rf-clinic {
+    padding: 22px;
+    border-radius: 24px;
+  }
+
+  .rf-state {
+    padding: 56px 32px;
+    border-radius: 26px;
+  }
+
+  .rf-privacy {
+    margin-top: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-shell .rf-btn,
+  .mp-shell .rf-search-btn,
+  .rf-clinic {
+    transition: none;
+  }
+
+  .rf-clinic:hover {
+    transform: none;
+  }
+
+  .rf-spinner {
+    animation-duration: 1.6s;
+  }
+}
+
+/* ===== MOBILE: nothing wider than the screen ===== */
+.rf-layout > *,
+.rf-results,
+.rf-clinic {
+  min-width: 0;
+}
+
+.rf-clinic-name,
+.rf-clinic-doctor,
+.rf-facts li > span,
+.rf-chip,
+.rf-results-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 360px) {
+  .rf-search,
+  .rf-clinic {
+    padding: 16px;
+  }
+
+  .mp-shell .rf-btn {
+    padding: 0 14px;
+  }
+
+  /* too narrow for two side by side: stack them */
+  .rf-clinic-actions {
+    grid-template-columns: 1fr;
+  }
+}

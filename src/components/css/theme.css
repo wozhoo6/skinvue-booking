@@ -1,0 +1,394 @@
+/* skinvue design tokens and base styles, shared by every page and by the
+   portaled guidelines sheet. Imported once from main.jsx. */
+
+:root {
+  --mp-bg: #f3f8f4;
+  --mp-ink: #0f3d40;
+  --mp-ink-soft: #4a5468;
+  --mp-muted: #5d6b7a;
+  --mp-dark: #0b4a4e;
+  --mp-mint: #a8dcb4;
+  --mp-mint-chip: #e8f5ec;
+  --mp-nav-idle: #9fb1b2;
+  --mp-card: #ffffff;
+  --mp-shadow: 0 1px 2px rgba(15, 61, 64, 0.04), 0 12px 28px -14px rgba(15, 61, 64, 0.18);
+  --mp-shadow-hover: 0 2px 4px rgba(15, 61, 64, 0.05), 0 22px 40px -18px rgba(15, 61, 64, 0.32);
+  --mp-mint-gradient: linear-gradient(180deg, #eef7f0 0%, #e6f3ea 100%);
+
+  --mh-ink: var(--mp-ink);
+  --mh-ink-soft: var(--mp-ink-soft);
+  --mh-muted: var(--mp-muted);
+  --mh-teal: #67b9ad;
+  --mh-teal-deep: #2b7c87;
+  --mh-teal-tint: var(--mp-mint-chip);
+  --mh-coral: #f06f72;
+  --mh-surface: #ffffff;
+  --mh-line: #e1eaec;
+  --mh-shadow: var(--mp-shadow);
+
+  /* desktop site */
+  --sv-container: 1200px;
+  --sv-header-h: 72px;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* the mint page colour also shows when overscrolling skinvue pages */
+body:has(.mp-shell) {
+  background: var(--mp-bg);
+}
+
+/* ===== SHELL ===== */
+.mp-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--mp-bg);
+  color: var(--mp-ink);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mp-shell *,
+.mp-shell *::before,
+.mp-shell *::after {
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.mp-shell button {
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mp-shell :focus-visible {
+  outline: 2px solid var(--mh-teal-deep);
+  outline-offset: 2px;
+}
+
+.mh-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ===== ICON BUTTON ===== */
+.mh-icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--mh-line);
+  border-radius: 14px;
+  background: var(--mh-surface);
+  color: var(--mh-ink);
+  cursor: pointer;
+  box-shadow: 0 4px 12px -8px rgba(32, 59, 58, 0.4);
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+
+.mh-icon-button:active {
+  transform: scale(0.94);
+}
+
+.mh-icon-button.is-active {
+  background: var(--mh-teal-tint);
+  color: var(--mh-teal-deep);
+}
+
+/* ===== DOCTOR ILLUSTRATION ===== */
+.mh-doctor-illustration {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.mh-float-card {
+  animation: mh-float 4s ease-in-out infinite;
+  filter: drop-shadow(0 6px 8px rgba(27, 47, 69, 0.12));
+}
+
+.mh-float-card.delay {
+  animation-delay: -2s;
+}
+
+@keyframes mh-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes mh-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mh-menu-item-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== ACCORDION (home info card, results, dashboard) ===== */
+.mp-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mp-accordion-item {
+  border-radius: 20px;
+  background: var(--mp-card);
+  box-shadow: var(--mp-shadow);
+}
+
+.mp-accordion-button {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px 16px 16px 18px;
+  border: 0;
+  border-radius: 20px;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mp-accordion-label {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--mp-ink);
+}
+
+.mp-accordion-button i {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--mp-mint-chip);
+  color: var(--mp-ink);
+  font-style: normal;
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: transform 0.25s ease, background 0.25s ease;
+}
+
+.mp-accordion-item.is-open .mp-accordion-button i {
+  transform: rotate(45deg);
+  background: var(--mp-dark);
+  color: var(--mp-mint);
+}
+
+/* grid-rows trick animates to the content's natural height */
+.mp-accordion-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease;
+}
+
+.mp-accordion-item.is-open .mp-accordion-content {
+  grid-template-rows: 1fr;
+}
+
+.mp-accordion-content > div {
+  overflow: hidden;
+}
+
+.mp-accordion-content p {
+  margin: 0;
+  padding: 0 18px 16px;
+  text-align: left;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--mp-muted);
+}
+
+@media (hover: hover) {
+  .mp-accordion-button:hover i {
+    background: var(--mp-mint);
+  }
+
+  .mp-accordion-item.is-open .mp-accordion-button:hover i {
+    background: var(--mp-dark);
+  }
+}
+
+@media (min-width: 769px) {
+  .mp-accordion-label {
+    font-size: 1.05rem;
+  }
+
+  .mp-accordion-content p {
+    font-size: 0.95rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-float-card {
+    animation: none;
+  }
+
+  .mp-accordion-content,
+  .mp-accordion-button i,
+  .mh-icon-button {
+    transition: none;
+  }
+}
+
+/* ===== PAGE HEADING (home greeting, results, dashboard, contact) ===== */
+.mp-greeting {
+  margin: 0 0 28px;
+  max-width: 13ch;
+  font-size: 2.6rem;
+  line-height: 1.08;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--mp-ink);
+}
+
+.mp-greeting span {
+  display: block;
+  color: var(--mp-ink-soft);
+}
+
+/* ===== TILES (home actions, dashboard stats) =====
+   Phones: dark hero spans the full first row, two white tiles below */
+.mp-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 36px;
+}
+
+.mp-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 132px;
+  padding: 18px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--mp-card);
+  box-shadow: var(--mp-shadow);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.mp-tile:active {
+  transform: scale(0.97);
+}
+
+.mp-tile strong {
+  margin-top: auto;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--mp-ink);
+}
+
+.mp-tile small {
+  font-size: 0.85rem;
+  color: var(--mp-muted);
+}
+
+.mp-tile-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 18px;
+  border-radius: 14px;
+  background: var(--mp-mint-chip);
+  color: var(--mp-ink);
+}
+
+.mp-tile--dark {
+  grid-column: 1 / span 2;
+  background: var(--mp-dark);
+  box-shadow: 0 14px 30px -16px rgba(11, 74, 78, 0.7);
+}
+
+.mp-tile--dark strong {
+  color: #fff;
+}
+
+.mp-tile--dark small {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.mp-tile--dark .mp-tile-icon {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--mp-mint);
+}
+
+@media (hover: hover) {
+  button.mp-tile:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--mp-shadow-hover);
+  }
+
+  button.mp-tile--dark:hover {
+    box-shadow: 0 22px 40px -18px rgba(11, 74, 78, 0.8);
+  }
+}
+
+/* Desktop: bigger headings, tiles in one row */
+@media (min-width: 769px) {
+  .mp-greeting {
+    margin-bottom: 36px;
+    font-size: clamp(2.8rem, 4.4vw, 4.25rem);
+    letter-spacing: -0.045em;
+  }
+
+  .mp-tiles {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 64px;
+  }
+
+  .mp-tile {
+    min-height: 168px;
+    padding: 24px;
+    border-radius: 26px;
+  }
+
+  .mp-tile strong {
+    font-size: 1.2rem;
+  }
+
+  .mp-tile small {
+    font-size: 0.92rem;
+  }
+
+  .mp-tile--dark {
+    grid-column: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-tile {
+    transition: none;
+  }
+
+  .mp-tile:active,
+  button.mp-tile:hover {
+    transform: none;
+  }
+}

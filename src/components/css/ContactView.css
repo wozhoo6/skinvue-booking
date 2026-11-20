@@ -1,0 +1,236 @@
+/* Contact view, plus the inset-icon fields and send button the dashboard's
+   forms reuse (.mh-contact wrapper). Mirrors the home's "Get to know Skinvue"
+   card: a heading above one mint card with white fields on top of it. */
+
+.mh-contact {
+  --mh-contact-bg: var(--mp-mint-gradient);
+  --mh-contact-primary: var(--mp-dark);
+}
+
+.mh-contact-card {
+  padding: 14px;
+  border: 1px solid rgba(15, 61, 64, 0.05);
+  border-radius: 26px;
+  background: var(--mh-contact-bg);
+}
+
+/* .mp-greeting supplies size/weight; matches .rp-greeting and .rp-lede on
+   the results screen */
+.mh-contact-greeting {
+  max-width: 15ch;
+  margin-bottom: 12px;
+}
+
+.mh-contact-lede {
+  margin: 0 0 18px;
+  color: var(--mh-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* Fields with an inset icon; placeholders stand in for visible labels */
+.mh-contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mh-contact-field {
+  position: relative;
+  display: block;
+}
+
+.mh-contact-field > svg {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  transform: translateY(-50%);
+  color: var(--mh-muted);
+  pointer-events: none;
+}
+
+.mh-contact-field input,
+.mh-contact-field textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px 12px 44px;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  background: var(--mh-surface);
+  box-shadow: var(--mh-shadow);
+  color: var(--mh-ink);
+  font-size: 16px; /* 16px keeps iOS from zooming on focus */
+  transition: border-color 0.2s ease;
+}
+
+.mh-contact-field input::placeholder,
+.mh-contact-field textarea::placeholder {
+  color: var(--mh-muted);
+}
+
+.mh-contact-field input:focus,
+.mh-contact-field textarea:focus {
+  outline: none;
+  border-color: var(--mh-contact-primary);
+}
+
+.mh-contact-field--message > svg {
+  top: 14px;
+  transform: none;
+}
+
+.mh-contact-field textarea {
+  min-height: 104px;
+  resize: vertical;
+}
+
+.mh-contact-actions {
+  display: flex;
+  margin-top: 4px;
+}
+
+.mh-contact .mh-contact-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--mh-contact-primary);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 16px -10px rgba(15, 61, 64, 0.8);
+  transition: transform 0.15s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mh-contact-actions .mh-contact-submit {
+  flex: 1;
+}
+
+.mh-contact .mh-contact-submit:active {
+  transform: scale(0.97);
+}
+
+.mh-contact .mh-contact-submit:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.mh-contact-success {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mh-contact-success h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--mh-ink);
+}
+
+.mh-contact-success p {
+  margin: 0 0 6px;
+  color: var(--mh-ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+/* Phones: the contact view fills the screen down to the nav clearance; the
+   card and its message box take the leftover height so there's no empty band
+   above the nav on taller phones */
+@media (max-width: 768px) {
+  .mp-canvas--fill {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mp-canvas--fill .mh-contact,
+  .mp-canvas--fill .mh-contact-card,
+  .mp-canvas--fill .mh-contact-form,
+  .mp-canvas--fill .mh-contact-field--message {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+  }
+
+  .mp-canvas--fill .mh-contact-field--message textarea {
+    flex: 1;
+    resize: none;
+  }
+}
+
+@media (hover: hover) {
+  .mh-contact .mh-contact-submit:hover:not(:disabled) {
+    box-shadow: 0 14px 24px -12px rgba(15, 61, 64, 0.85);
+    transform: translateY(-1px);
+  }
+}
+
+/* Desktop: heading and lede on the left, the form card on the right */
+@media (min-width: 769px) {
+  .mh-contact-page {
+    display: grid;
+    grid-template-columns: 5fr 7fr;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      'head card'
+      'lede card';
+    column-gap: clamp(40px, 6vw, 96px);
+    align-items: start;
+    padding-top: 24px;
+  }
+
+  .mh-contact-page .mh-contact-greeting {
+    grid-area: head;
+    margin-bottom: 16px;
+  }
+
+  .mh-contact-page .mh-contact-lede {
+    grid-area: lede;
+    max-width: 36ch;
+    font-size: 1.05rem;
+  }
+
+  .mh-contact-page .mh-contact-card {
+    grid-area: card;
+    padding: 32px;
+    border-radius: 32px;
+  }
+
+  .mh-contact-page .mh-contact-form {
+    gap: 14px;
+  }
+
+  .mh-contact-page .mh-contact-field textarea {
+    min-height: 220px;
+  }
+
+  .mh-contact-page .mh-contact-actions {
+    justify-content: flex-end;
+  }
+
+  .mh-contact-page .mh-contact-actions .mh-contact-submit {
+    flex: 0 0 auto;
+    min-width: 200px;
+  }
+
+  .mh-contact-page .mh-contact-success {
+    padding: 8px;
+  }
+
+  .mh-contact-page .mh-contact-success .mh-contact-submit {
+    align-self: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-contact .mh-contact-submit,
+  .mh-contact-field input,
+  .mh-contact-field textarea {
+    transition: none;
+  }
+}

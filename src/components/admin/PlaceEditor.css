@@ -1,0 +1,260 @@
+/* Clinic detail editor (rendered inside .admin-clinics-container, which defines the
+   --text-* / --border-mod / --accent-blue variables used here). */
+
+.pe-section {
+  padding-bottom: 14px;
+}
+
+.pe-block {
+  margin: 0 0 16px;
+}
+
+.pe-block-title {
+  margin: 0 0 6px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-dark);
+}
+
+.pe-note {
+  margin: 6px 0 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.pe-tag {
+  display: inline-block;
+  margin-right: 4px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border-mod);
+  background: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--text-gray);
+}
+
+.pe-tag.is-google {
+  border-color: #cfe7d6;
+  color: var(--accent-blue);
+}
+
+.pe-tag.is-manual {
+  border-color: #f0d9a8;
+  background: #fff8e6;
+  color: #8a5a00;
+}
+
+.pe-google-value {
+  margin: 4px 0 0;
+  font-size: 0.76rem;
+  color: var(--text-gray);
+  overflow-wrap: anywhere;
+}
+
+.pe-count {
+  display: block;
+  margin-top: 4px;
+  text-align: right;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.pe-error {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  color: #b4383b;
+}
+
+.pe-warn {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #fff8e6;
+  font-size: 0.78rem;
+  color: #8a5a00;
+}
+
+/* ===== hours ===== */
+.pe-hours {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+  border: 1px solid var(--border-mod);
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+
+.pe-day {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-mod);
+}
+
+.pe-day:last-child {
+  border-bottom: 0;
+}
+
+.pe-day-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  cursor: pointer;
+}
+
+.pe-day-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent-blue);
+}
+
+.pe-closed {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.pe-periods {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pe-period {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-gray);
+}
+
+.pe-period select {
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--border-mod);
+  border-radius: 12px;
+  background: var(--bg-light);
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--text-dark);
+}
+
+.pe-period select:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(43, 124, 135, 0.15);
+}
+
+.pe-period-actions {
+  display: flex;
+  gap: 14px;
+}
+
+.pe-link {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+  cursor: pointer;
+}
+
+.pe-link:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pe-link.is-danger {
+  color: #b4383b;
+}
+
+.pe-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.pe-btn-inline {
+  width: auto;
+}
+
+/* ===== doctors ===== */
+.pe-doctor {
+  align-items: center;
+}
+
+.pe-doctor-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pe-doctor-meta {
+  margin-left: 0;
+}
+
+/* ===== clinic list: "missing" filter and badges ===== */
+.pe-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-gray);
+}
+
+.pe-filter select {
+  flex: 1 1 160px;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--border-mod);
+  border-radius: 12px;
+  background: var(--bg-light);
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: var(--text-dark);
+}
+
+.pe-missing {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.pe-missing-badge {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #fff8e6;
+  border: 1px solid #f0d9a8;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #8a5a00;
+}
+
+@media (max-width: 520px) {
+  .pe-day {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}
