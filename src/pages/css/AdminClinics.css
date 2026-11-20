@@ -582,6 +582,16 @@
   gap: 8px;
 }
 
+/* Footer of the event log: "Showing X of N" next to "Load more". */
+.admin-log-more {
+  align-items: center;
+  margin-top: 0.75rem;
+}
+
+.admin-log-more .admin-log-total {
+  margin: 0;
+}
+
 .admin-log-filters {
   display: grid;
   grid-template-columns: repeat(5, 1fr);

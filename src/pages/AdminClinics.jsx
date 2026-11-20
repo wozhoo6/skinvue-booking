@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faSave,
@@ -15,6 +15,7 @@ import {
 import AdminShell, { useAdmin } from '../components/admin/AdminShell';
 import PlaceDetailsEditor, { PlaceDoctorsEditor } from '../components/admin/PlaceEditor';
 import { rpc, isAdminKeyError } from '../lib/supabase';
+import { collectPages, csvOfPage, mergeById } from '../utils/paging';
 import './css/AdminClinics.css';
 
 // Options for the event-log "Event Type" filter — kept in sync with the
@@ -118,6 +119,8 @@ function groupInteractionsByClinic(interactions) {
  */
 
 const CLINIC_PAGE_SIZE = 50;
+// Referral Event Log: events fetched per request (the server allows up to 1000).
+const LOG_PAGE_SIZE = 200;
 
 // match_confidence from the Supabase admin functions: how surely a Google
 // place belongs to the registered (NPI) clinic we would contact.
@@ -207,6 +210,12 @@ function AdminClinicsContent() {
   const [logSummaryLoading, setLogSummaryLoading] = useState(false);
   const [log, setLog] = useState(null);
   const [logLoading, setLogLoading] = useState(false);
+  const [logLoadingMore, setLogLoadingMore] = useState(false);
+  // The filters the rows on screen were fetched with. "Load more" must page through THAT
+  // search, even if the filter inputs have been edited since without pressing Apply.
+  const logQueryRef = useRef(logFilters);
+  // Bumped by every fresh load, so a late "load more" for an older search is ignored.
+  const logRequestRef = useRef(0);
   const [exporting, setExporting] = useState(false);
   // 'clinic' (default) groups the log by clinic with per-clinic totals and
   // an expandable event list; 'date' shows the flat, newest-first table.
@@ -265,7 +274,7 @@ function AdminClinicsContent() {
   const fetchReferredClinics = async () => {
     if (!adminKey) return;
     try {
-      const data = await rpc('admin_referral_summary', { p_admin_key: adminKey });
+      const data = await fetchSummary(EMPTY_LOG_FILTERS);
       const options = (data?.by_clinic || []).map((c) => ({ id: c.clinic_id, name: c.clinic_name || c.clinic_id }));
       options.sort((a, b) => a.name.localeCompare(b.name));
       setReferredClinics(options);
@@ -275,9 +284,31 @@ function AdminClinicsContent() {
     }
   };
 
+  // admin_referral_summary: the totals, plus the by-clinic rows, which the server pages
+  // (up to 1000 clinics per call). Callers want the whole breakdown, so the later pages
+  // are fetched and joined here; the totals come from the first page.
   const fetchSummary = async (filters) => {
     try {
-      return await rpc('admin_referral_summary', { p_admin_key: adminKey, ...filterArgs(filters) });
+      const { pages, complete } = await collectPages(
+        (offset) =>
+          rpc('admin_referral_summary', {
+            p_admin_key: adminKey,
+            ...filterArgs(filters),
+            p_offset: offset > 0 ? offset : undefined,
+          }),
+        {
+          count: (page) => page?.by_clinic?.length || 0,
+          hasMore: (page) => page?.by_clinic_has_more === true,
+        }
+      );
+      if (pages.length === 1) return pages[0];
+
+      // A clinic can sit on the edge of two pages if events arrive between the calls.
+      const byClinic = new Map();
+      for (const page of pages) {
+        for (const row of page.by_clinic || []) byClinic.set(row.clinic_id, row);
+      }
+      return { ...pages[0], by_clinic: [...byClinic.values()], by_clinic_has_more: !complete };
     } catch (err) {
       throw new Error(errorText(err, 'Failed to load referral totals.'));
     }
@@ -314,18 +345,57 @@ function AdminClinicsContent() {
     }
   };
 
+  // First page of the log for the current filters. loadMoreLog adds the later pages.
   const fetchLog = async () => {
     if (!adminKey) return;
+    const requestId = ++logRequestRef.current;
+    const filters = logFilters;
+    logQueryRef.current = filters;
     setLogLoading(true);
+    setLogLoadingMore(false);
     try {
-      setLog(
-        await rpc('admin_referral_log', { p_admin_key: adminKey, ...filterArgs(logFilters), p_limit: 200 })
-      );
+      const data = await rpc('admin_referral_log', {
+        p_admin_key: adminKey,
+        ...filterArgs(filters),
+        p_limit: LOG_PAGE_SIZE,
+      });
+      if (requestId === logRequestRef.current) setLog(data);
     } catch (err) {
+      if (requestId !== logRequestRef.current) return;
       showMessage(errorText(err, 'Failed to load the referral event log.'), true);
       setLog(null);
     } finally {
-      setLogLoading(false);
+      if (requestId === logRequestRef.current) setLogLoading(false);
+    }
+  };
+
+  // The next page of events for the filters already applied, added under the rows
+  // already shown (skipping any that moved across the page edge).
+  const loadMoreLog = async () => {
+    if (!adminKey || !log || logLoading || logLoadingMore) return;
+    const requestId = logRequestRef.current;
+    setLogLoadingMore(true);
+    try {
+      const data = await rpc('admin_referral_log', {
+        p_admin_key: adminKey,
+        ...filterArgs(logQueryRef.current),
+        p_limit: LOG_PAGE_SIZE,
+        p_offset: log.interactions.length,
+      });
+      if (requestId !== logRequestRef.current) return; // filters were re-applied meanwhile
+      setLog((prev) =>
+        prev && {
+          ...prev,
+          total: data?.total ?? prev.total,
+          interactions: mergeById(prev.interactions, data?.interactions || []),
+        }
+      );
+    } catch (err) {
+      if (requestId === logRequestRef.current) {
+        showMessage(errorText(err, 'Failed to load more events.'), true);
+      }
+    } finally {
+      if (requestId === logRequestRef.current) setLogLoadingMore(false);
     }
   };
 
@@ -400,13 +470,30 @@ function AdminClinicsContent() {
   };
 
   // Referral Event Log export: the raw, row-per-event CSV built by Supabase
-  // (admin_referral_export_csv), respecting the Event Log-tab filters.
+  // (admin_referral_export_csv), respecting the Event Log-tab filters. The server returns
+  // it in pages (header only on the first, every page ending in a line break), so the
+  // pages are fetched in turn and joined into one file.
   const handleExportCsv = async () => {
     if (!adminKey) return;
     setExporting(true);
     try {
-      const csvText = await rpc('admin_referral_export_csv', { p_admin_key: adminKey, ...filterArgs(logFilters) });
-      downloadCsvText('referral_interactions.csv', csvText || '');
+      const { pages, complete } = await collectPages(
+        (offset) =>
+          rpc('admin_referral_export_csv', {
+            p_admin_key: adminKey,
+            ...filterArgs(logFilters),
+            p_offset: offset > 0 ? offset : undefined,
+          }),
+        {
+          count: (page) => (typeof page === 'string' ? 0 : page?.count || 0),
+          hasMore: (page) => page?.has_more === true,
+        }
+      );
+      if (!complete) {
+        // Better to say so than to hand over a file that looks complete but isn't.
+        throw new Error('That export is too large to build here. Narrow the dates or the clinic and try again.');
+      }
+      downloadCsvText('referral_interactions.csv', pages.map(csvOfPage).join(''));
     } catch (err) {
       showMessage(errorText(err, 'Failed to export the CSV.'), true);
     } finally {
@@ -1165,10 +1252,27 @@ function AdminClinicsContent() {
               </div>
             )}
             {log && (
-              <p className="admin-log-total">
-                Showing {log.interactions.length} of {log.total} matching event
-                {log.total === 1 ? '' : 's'}.
-              </p>
+              <div className="admin-log-panel-actions admin-log-more">
+                <p className="admin-log-total">
+                  Showing {log.interactions.length} of {log.total} matching event
+                  {log.total === 1 ? '' : 's'}.
+                  {logView === 'clinic' && log.interactions.length < log.total && (
+                    <> The per-clinic counts above only include the events shown so far.</>
+                  )}
+                </p>
+                {log.interactions.length < log.total && (
+                  <button
+                    type="button"
+                    className="admin-new-btn"
+                    disabled={logLoading || logLoadingMore}
+                    onClick={loadMoreLog}
+                  >
+                    {logLoadingMore
+                      ? 'Loading…'
+                      : `Load ${Math.min(LOG_PAGE_SIZE, log.total - log.interactions.length)} more`}
+                  </button>
+                )}
+              </div>
             )}
           </>
         )}

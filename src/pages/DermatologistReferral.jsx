@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { rpc } from '../lib/supabase';
+import { detectApproxLocation, placeLabel } from '../lib/ipLocation';
+import { countLabel, mergeById, pageParams, readPage } from '../utils/paging';
 import {
   resetReferralId,
   setSearchLocation,
@@ -12,9 +14,17 @@ import { Icon } from '../components/Icons';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import './css/DermatologistReferral.css';
 
-// "Use My Location" is hidden for now (UI only: the handler and error messages below are
-// intact). Set to true to bring the button, its error help and the related copy back.
-const SHOW_USE_MY_LOCATION = false;
+// "Use My Exact Location" asks the browser for the device's GPS position, so the browser
+// shows its permission prompt. On load the page already shows clinics for an approximate
+// area guessed from the visitor's IP address (see detectApproxLocation), with no prompt;
+// this button is the precise option. Set to false to hide the button, its error help and
+// the related copy.
+const SHOW_USE_MY_LOCATION = true;
+
+// An IP address only gives a city-level guess, so search wider than for a GPS fix (25 km),
+// and widen once more when that finds nothing (smaller towns).
+const APPROX_RADIUS_KM = 40;
+const APPROX_WIDER_RADIUS_KM = 100;
 
 const displayUrl = (url) => url.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
@@ -100,7 +110,7 @@ function ClinicCard({ clinic, onSelect, onBook }) {
   );
 }
 
-// What the visitor sees when "Use My Location" fails. Written for people who aren't
+// What the visitor sees when "Use My Exact Location" fails. Written for people who aren't
 // comfortable with device settings: plain words for what's probably wrong, numbered
 // steps for THEIR device (iPhone, Android, Windows, Mac) and browser, then what to do
 // afterwards. The wording also follows the screen: "tap" / "phone" on a touch screen,
@@ -215,7 +225,7 @@ function buildLocationError(kind, { isTouch, isSmallScreen }) {
   const device = isMobile ? 'phone' : 'computer';
   const ctx = { platform, browser, isMobile };
 
-  const tryAgain = `Come back to this page and ${tap} “Use My Location” again. If nothing changes, refresh the page first.`;
+  const tryAgain = `Come back to this page and ${tap} “Use My Exact Location” again. If nothing changes, refresh the page first.`;
 
   const messages = {
     denied: {
@@ -247,7 +257,7 @@ function buildLocationError(kind, { isTouch, isSmallScreen }) {
       steps: [
         'Type your ZIP code, city or a clinic name in the box below.',
         `${isTouch ? 'Tap' : 'Click'} the magnifying glass button to search.`,
-        'Or open this page in Safari, Chrome, Edge or Firefox and try “Use My Location” again.',
+        'Or open this page in Safari, Chrome, Edge or Firefox and try “Use My Exact Location” again.',
       ],
     },
     unavailable: {
@@ -269,6 +279,23 @@ function buildLocationError(kind, { isTouch, isSmallScreen }) {
 // cards, and a details sheet (ClinicDetailsModal) on top of the same page.
 function DermatologistReferral() {
   const hasInitialized = useRef(false);
+  const hasDetected = useRef(false);
+  // Set once the visitor picks a place themselves (a typed search, or an allowed GPS fix),
+  // so the slower automatic IP guess can never overwrite it.
+  const userSearchedRef = useRef(false);
+  const locationInputRef = useRef(null);
+  const locationAlertRef = useRef(null);
+  // Bumped by every new search. A reply that comes back after a newer search started (or
+  // while "show more" was loading for an older one) is ignored instead of overwriting it.
+  const searchRequestRef = useRef(0);
+  // { fn, args } of the search on screen, so "Show more" asks for the next page of THAT
+  // search (same place, same radius), not of whatever the search box says now.
+  const activeSearchRef = useRef(null);
+
+  // { city, region } while the clinics on screen come from the automatic IP guess.
+  const [approxLocation, setApproxLocation] = useState(null);
+  // Label ("Houston, TX") when the automatic search found no clinics anywhere near.
+  const [noClinicsNear, setNoClinicsNear] = useState(null);
 
   const [locating, setLocating] = useState(false);
   // Which kind of location failure to explain ('unavailable' | 'denied' | 'timeout' |
@@ -287,6 +314,12 @@ function DermatologistReferral() {
   const [resultsError, setResultsError] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [resultsLabel, setResultsLabel] = useState('');
+  // Paging of the search on screen: how many clinics match in all, whether the server has
+  // more pages, and the state of the "Show more clinics" button.
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [moreError, setMoreError] = useState(false);
 
   // { id, distanceKm } of the clinic currently shown in the details modal,
   // or null when the modal is closed. Kept as page state (not a route) so
@@ -306,22 +339,144 @@ function DermatologistReferral() {
     resetReferralId();
   }, []);
 
-  // fn/args: a Supabase function ('nearby_places' or 'search_places') and its
-  // arguments. Both return { clinics, count }.
+  // fn/args: a Supabase function ('nearby_places' or 'search_places') and its arguments.
+  // Both are paged: this loads page one; loadMoreClinics adds the following pages.
   const runSearch = (fn, args, label) => {
+    const requestId = ++searchRequestRef.current;
+    activeSearchRef.current = { fn, args };
     setResultsLoading(true);
     setResultsError(null);
     setHasSearched(true);
     setResultsLabel(label);
+    setLoadingMore(false);
+    setMoreError(false);
 
-    rpc(fn, args)
-      .then((data) => setClinics(data?.clinics || []))
-      .catch(() => {
-        setClinics([]);
-        setResultsError('We couldn’t load nearby clinics right now. Please try again in a moment. TRY TURNINF');
+    rpc(fn, { ...args, ...pageParams(0) })
+      .then((data) => {
+        if (requestId !== searchRequestRef.current) return;
+        const page = readPage(data);
+        setClinics(page.clinics);
+        setTotal(page.total);
+        setHasMore(page.hasMore);
       })
-      .finally(() => setResultsLoading(false));
+      .catch(() => {
+        if (requestId !== searchRequestRef.current) return;
+        setClinics([]);
+        setTotal(0);
+        setHasMore(false);
+        setResultsError('We couldn’t load nearby clinics right now. Please try again in a moment.');
+      })
+      .finally(() => {
+        if (requestId === searchRequestRef.current) setResultsLoading(false);
+      });
   };
+
+  // "Show more clinics": the next page of the search on screen, added under what's already
+  // there. The offset is how many we already hold; a failure keeps the clinics and offers
+  // a retry.
+  const loadMoreClinics = () => {
+    const active = activeSearchRef.current;
+    if (!active || loadingMore || resultsLoading) return;
+
+    const requestId = searchRequestRef.current;
+    setLoadingMore(true);
+    setMoreError(false);
+
+    rpc(active.fn, { ...active.args, ...pageParams(clinics.length) })
+      .then((data) => {
+        if (requestId !== searchRequestRef.current) return; // a new search started meanwhile
+        const page = readPage(data);
+        setClinics((current) => mergeById(current, page.clinics));
+        setTotal(page.total);
+        setHasMore(page.hasMore);
+      })
+      .catch(() => {
+        if (requestId === searchRequestRef.current) setMoreError(true);
+      })
+      .finally(() => {
+        if (requestId === searchRequestRef.current) setLoadingMore(false);
+      });
+  };
+
+  // The automatic search from the IP guess. Unlike runSearch it stays quiet when it can't
+  // help (error, or no clinics near that area): the visitor never asked for this search,
+  // so the page just goes back to its normal "search to begin" state.
+  const runApproxSearch = async (place) => {
+    const label = placeLabel(place);
+    const requestId = ++searchRequestRef.current;
+    const isCurrent = () => requestId === searchRequestRef.current; // false once the visitor searches
+    const nearby = (radiusKm) =>
+      rpc('nearby_places', {
+        p_lat: place.lat,
+        p_lng: place.lng,
+        p_radius_km: radiusKm,
+        ...pageParams(0),
+      });
+    const backToStart = () => {
+      setHasSearched(false);
+      setResultsLabel('');
+      setTotal(0);
+      setHasMore(false);
+    };
+
+    setResultsLoading(true);
+    setResultsError(null);
+    setHasSearched(true);
+    setResultsLabel(`Near ${label}`);
+    setLoadingMore(false);
+    setMoreError(false);
+
+    try {
+      let radiusKm = APPROX_RADIUS_KM;
+      let page = readPage(await nearby(radiusKm));
+      if (page.clinics.length === 0) {
+        radiusKm = APPROX_WIDER_RADIUS_KM;
+        page = readPage(await nearby(radiusKm));
+      }
+      if (!isCurrent()) return; // the visitor searched meanwhile: their results win
+
+      if (page.clinics.length === 0) {
+        backToStart();
+        setNoClinicsNear(label);
+        return;
+      }
+      // "Show more" must keep to the radius that actually found these clinics.
+      activeSearchRef.current = {
+        fn: 'nearby_places',
+        args: { p_lat: place.lat, p_lng: place.lng, p_radius_km: radiusKm },
+      };
+      // A fixed tag for reports: how this search started, not where the person is.
+      setSearchLocation('ip_location');
+      setClinics(page.clinics);
+      setTotal(page.total);
+      setHasMore(page.hasMore);
+      setResultsLabel(
+        radiusKm === APPROX_WIDER_RADIUS_KM ? `Near ${label} (wider area)` : `Near ${label}`
+      );
+      setApproxLocation(place);
+    } catch {
+      if (isCurrent()) backToStart();
+    } finally {
+      if (isCurrent()) setResultsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Once per visit (the ref also covers React StrictMode's double effect run in dev).
+    if (hasDetected.current) return;
+    hasDetected.current = true;
+    detectApproxLocation().then((place) => {
+      if (place && !userSearchedRef.current) runApproxSearch(place);
+    });
+  }, []);
+
+  // "Use My Exact Location" can be pressed from the banner under the results, but its
+  // error help sits in the search card above: bring it into view if it isn't.
+  useEffect(() => {
+    if (locationError) {
+      locationAlertRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [locationError]);
 
   const handleShareLocation = () => {
     if (!navigator.geolocation) {
@@ -336,6 +491,11 @@ function DermatologistReferral() {
       (position) => {
         setLocating(false);
         const { latitude, longitude } = position.coords;
+        // Only now, not at the click: if the prompt is denied or ignored, the approximate
+        // results must stay. A real GPS fix replaces them.
+        userSearchedRef.current = true;
+        setApproxLocation(null);
+        setNoClinicsNear(null);
         setSearchLocation(null); // no text query to associate with a geolocation-based search
         runSearch(
           'nearby_places',
@@ -361,6 +521,9 @@ function DermatologistReferral() {
     event?.preventDefault();
     const trimmed = locationQuery.trim();
     if (!trimmed) return;
+    userSearchedRef.current = true;
+    setApproxLocation(null);
+    setNoClinicsNear(null);
     setLocationQuery(trimmed);
     setSearchLocation(trimmed);
     runSearch('search_places', { p_location: trimmed }, `Results for “${trimmed}”`);
@@ -397,13 +560,13 @@ function DermatologistReferral() {
                 </>
               ) : (
                 <>
-                  <Icon name="locate" size={20} /> Use My Location
+                  <Icon name="locate" size={20} /> Use My Exact Location
                 </>
               )}
             </button>
 
             {locationMessage && (
-              <div className="rf-alert" role="alert">
+              <div className="rf-alert" role="alert" ref={locationAlertRef}>
                 <Icon name="alert" size={24} />
                 <div className="rf-alert-body">
                   <strong className="rf-alert-title">{locationMessage.title}</strong>
@@ -429,6 +592,7 @@ function DermatologistReferral() {
               <div className="rf-input-row">
                 <input
                   id="rf-location-input"
+                  ref={locationInputRef}
                   type="text"
                   inputMode="search"
                   autoComplete="off"
@@ -462,21 +626,77 @@ function DermatologistReferral() {
                 <p className="rf-results-label">
                   {resultsLabel}
                   {showList && (
-                    <span className="rf-count">
-                      {clinics.length} {clinics.length === 1 ? 'Clinic' : 'Clinics'}
-                    </span>
+                    <span className="rf-count">{countLabel(clinics.length, total)}</span>
                   )}
                 </p>
               )}
             </div>
 
+            {approxLocation && showList && (
+              <div className="rf-approx" role="status">
+                <p className="rf-approx-text">
+                  Showing clinics near <strong>{placeLabel(approxLocation)}</strong>. We guessed this
+                  from your internet connection, so it may not be exactly where you are.
+                </p>
+                <div className="rf-approx-actions">
+                  {SHOW_USE_MY_LOCATION && (
+                    <button
+                      type="button"
+                      className="rf-approx-btn"
+                      onClick={handleShareLocation}
+                      disabled={locating}
+                      aria-busy={locating}
+                    >
+                      {locating ? (
+                        <>
+                          <span className="rf-spinner is-light" aria-hidden="true" /> Finding You...
+                        </>
+                      ) : (
+                        <>
+                          <Icon name="locate" size={18} /> Use My Exact Location
+                        </>
+                      )}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="rf-approx-link"
+                    onClick={() => locationInputRef.current?.focus()}
+                  >
+                    {SHOW_USE_MY_LOCATION ? 'Or enter your ZIP code' : 'Not right? Enter your ZIP code'}
+                  </button>
+                </div>
+                <details className="rf-approx-why">
+                  <summary>Why is this only an estimate?</summary>
+                  <p>
+                    Websites can’t see where your device is. They can only see your internet
+                    provider’s connection point, and that is usually somewhere near you, but it can
+                    be in the next neighborhood or a nearby town. We never see your address or your
+                    exact position.
+                  </p>
+                  <p>
+                    {SHOW_USE_MY_LOCATION
+                      ? 'For more accurate results, choose “Use My Exact Location” (your browser will ask for your permission first) or type your ZIP code.'
+                      : 'For more accurate results, type your ZIP code.'}
+                  </p>
+                </details>
+              </div>
+            )}
+
             {!hasSearched && (
               <div className="rf-card rf-state">
                 <span className="rf-state-icon"><Icon name="search" size={24} /></span>
-                <p>
-                  Search by ZIP code, city or clinic name
-                  {SHOW_USE_MY_LOCATION ? ', or use your location,' : ''} to see dermatology clinics.
-                </p>
+                {noClinicsNear ? (
+                  <p>
+                    We don’t have clinics near {noClinicsNear} yet. Enter a ZIP code or city to
+                    search.
+                  </p>
+                ) : (
+                  <p>
+                    Search by ZIP code, city or clinic name
+                    {SHOW_USE_MY_LOCATION ? ', or use your location,' : ''} to see dermatology clinics.
+                  </p>
+                )}
               </div>
             )}
 
@@ -515,6 +735,31 @@ function DermatologistReferral() {
                   />
                 ))}
               </ul>
+            )}
+
+            {showList && (hasMore || moreError) && (
+              <div className="rf-more">
+                {moreError && (
+                  <p className="rf-more-error" role="alert">
+                    We couldn’t load more clinics. Please try again.
+                  </p>
+                )}
+                <button
+                  type="button"
+                  className="rf-btn primary"
+                  onClick={loadMoreClinics}
+                  disabled={loadingMore}
+                  aria-busy={loadingMore}
+                >
+                  {loadingMore ? (
+                    <>
+                      <span className="rf-spinner is-light" aria-hidden="true" /> Loading...
+                    </>
+                  ) : (
+                    <>Show More Clinics ({Math.max(total - clinics.length, 0)} left)</>
+                  )}
+                </button>
+              </div>
             )}
           </section>
         </div>

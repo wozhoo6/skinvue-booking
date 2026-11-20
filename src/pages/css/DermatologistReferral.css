@@ -282,6 +282,105 @@
   font-weight: 600;
 }
 
+/* Banner above the results when they come from the automatic IP guess (an estimate).
+   Text and tap targets are kept large: the audience is mostly older adults. */
+.rf-approx {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: var(--mp-mint-chip);
+  color: var(--mp-ink);
+}
+
+.rf-approx-text {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.rf-approx-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.mp-shell .rf-approx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--mp-dark);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mp-shell .rf-approx-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.mp-shell .rf-approx-link {
+  min-height: 48px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--mp-ink);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* "Show More Clinics" under the list: one clear button, with the error (if the next page
+   failed) right above it. Clinics already on screen stay put. */
+.rf-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.mp-shell .rf-more .rf-btn.primary {
+  max-width: 360px;
+}
+
+.rf-more-error {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--mp-ink);
+  font-weight: 600;
+}
+
+/* "Why is this only an estimate?" — a native <details>, so it works without JS and with
+   screen readers; the summary doubles as a 48px tap target. */
+.rf-approx-why summary {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rf-approx-why p {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
 .rf-state {
   display: flex;
   flex-direction: column;
