@@ -93,4 +93,13 @@ src/
 
 - The page title, description and `manifest.json` name still say "AI Skin Screening".
 - `src/utils/referralTracking.js` still creates a screening id and sends `source: 'ai_screening_results'` to Supabase. The database column default also uses that value.
-- There is no deployment configuration yet. The app builds to static files in `dist/` and needs an SPA fallback (all routes serve `index.html`) on whatever host is used.
+
+## Deploy (Vercel)
+
+The app builds to static files in `dist/` (`npm run build`); Vercel detects Vite on its own.
+
+- **Environment variables** (Project Settings, for Production, Preview and Development): `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. They are read at **build time**, so after changing one, redeploy. Only the publishable key belongs here. Never the secret or `service_role` key, and never the admin key (that is typed in the browser).
+- **`vercel.json`** sends every path that is not a real file to `index.html`, so a refresh or a shared link on `/admin`, `/contact` and the other client-side routes works.
+- **Test phase only:** `vercel.json` also adds an `X-Robots-Tag: noindex, nofollow` header so the test site stays out of search engines. Remove that header before a real launch.
+- Give testers the **Production** URL (from `main`). Preview deployments from other branches are behind Vercel's login by default.
+- The clinic data is Texas-only, so visitors elsewhere see "We don't have clinics near … yet" until they search a Texas city or ZIP.
