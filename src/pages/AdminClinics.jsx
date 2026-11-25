@@ -11,10 +11,13 @@ import {
   faChevronDown,
   faThumbtack,
   faSearch,
+  faEyeSlash,
+  faEye,
 } from '@fortawesome/free-solid-svg-icons';
 import AdminShell, { useAdmin } from '../components/admin/AdminShell';
 import PlaceDetailsEditor, { PlaceDoctorsEditor } from '../components/admin/PlaceEditor';
 import { rpc, isAdminKeyError } from '../lib/supabase';
+import { setPlaceDisabled } from '../lib/placeAdminApi';
 import { collectPages, csvOfPage, mergeById } from '../utils/paging';
 import './css/AdminClinics.css';
 
@@ -190,6 +193,7 @@ function AdminClinicsContent() {
   const [placeLoading, setPlaceLoading] = useState(false);
   const [priorityInputs, setPriorityInputs] = useState({});
   const [savingAddressId, setSavingAddressId] = useState(null);
+  const [togglingDisabled, setTogglingDisabled] = useState(false);
 
   // Clinics that have received referrals: the options of both tabs' Clinic
   // filter (a dropdown of every scraped place would be thousands long).
@@ -569,6 +573,33 @@ function AdminClinicsContent() {
     }
   };
 
+  // admin_set_place_disabled: hides the place from the public site (or shows it again).
+  // The function returns the refreshed place, so the detail panel is replaced directly.
+  const handleToggleDisabled = async () => {
+    if (!selectedPlace) return;
+    const disable = !selectedPlace.is_disabled;
+    if (
+      disable &&
+      !window.confirm(
+        `Disable "${selectedPlace.name}"? It will no longer appear in search, nearby results, ` +
+          'clinic pages or booking requests. You can enable it again at any time.'
+      )
+    ) {
+      return;
+    }
+    setTogglingDisabled(true);
+    try {
+      const updated = await setPlaceDisabled(adminKey, selectedPlace.id, disable);
+      setSelectedPlace(updated);
+      showMessage(disable ? 'Clinic disabled. It is hidden from the public site.' : 'Clinic enabled. It is visible again.');
+      fetchClinics();
+    } catch (err) {
+      showMessage(errorText(err, 'Failed to update the clinic.'), true);
+    } finally {
+      setTogglingDisabled(false);
+    }
+  };
+
   const handleClearPriority = async (addressId) => {
     setSavingAddressId(addressId);
     try {
@@ -641,7 +672,7 @@ function AdminClinicsContent() {
               return (
                 <li
                   key={clinic.id}
-                  className={`admin-clinic-row ${selectedClinicId === clinic.id ? 'admin-clinic-row-active' : ''}`}
+                  className={`admin-clinic-row ${selectedClinicId === clinic.id ? 'admin-clinic-row-active' : ''} ${clinic.is_disabled ? 'admin-clinic-row-disabled' : ''}`}
                 >
                   <button className="admin-clinic-row-select" onClick={() => loadPlace(clinic.id)}>
                     <span
@@ -650,6 +681,9 @@ function AdminClinicsContent() {
                     />
                     <span>
                       {clinic.name}
+                      {clinic.is_disabled && (
+                        <span className="admin-disabled-badge" title="Hidden from the public site">Disabled</span>
+                      )}
                       {missing.length > 0 && (
                         <span className="pe-missing">
                           {missing.map(([flag, label]) => (
@@ -712,7 +746,10 @@ function AdminClinicsContent() {
 
           {selectedClinicId && selectedPlace && (
             <>
-              <h2>{selectedPlace.name}</h2>
+              <h2>
+                {selectedPlace.name}
+                {selectedPlace.is_disabled && <span className="admin-disabled-badge">Disabled</span>}
+              </h2>
               <p className="admin-field-help">
                 {selectedPlace.address}
                 {selectedPlace.phone ? ` · ${selectedPlace.phone}` : ''}
@@ -725,6 +762,28 @@ function AdminClinicsContent() {
                   </a>
                 </p>
               )}
+
+              <div className="admin-form-section">
+                <h3 className="admin-form-section-title">
+                  <FontAwesomeIcon icon={selectedPlace.is_disabled ? faEyeSlash : faEye} /> Public visibility
+                </h3>
+                <p className="admin-field-help">
+                  {selectedPlace.is_disabled
+                    ? 'This clinic is disabled: it is hidden from search, nearby results, clinic pages and booking requests. Pins, edits and referral history are kept.'
+                    : 'This clinic is visible on the public site. Disable it to hide it everywhere without deleting anything.'}
+                </p>
+                <div className="admin-log-panel-actions">
+                  <button
+                    type="button"
+                    className={selectedPlace.is_disabled ? 'admin-new-btn' : 'admin-log-clear-btn'}
+                    disabled={togglingDisabled}
+                    onClick={handleToggleDisabled}
+                  >
+                    <FontAwesomeIcon icon={selectedPlace.is_disabled ? faEye : faEyeSlash} />{' '}
+                    {selectedPlace.is_disabled ? 'Enable clinic' : 'Disable clinic'}
+                  </button>
+                </div>
+              </div>
 
               <div className="admin-form-section">
                 <h3 className="admin-form-section-title">

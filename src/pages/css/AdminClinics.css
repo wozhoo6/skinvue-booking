@@ -252,6 +252,24 @@
   background: var(--light-accent);
 }
 
+/* A disabled clinic is hidden from the public site; dim it in the admin list. */
+.admin-clinic-row-disabled .admin-clinic-row-select {
+  opacity: 0.6;
+}
+
+.admin-disabled-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #fdecec;
+  border: 1px solid #f1b8b8;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #a12626;
+  vertical-align: middle;
+}
+
 .admin-clinic-row-select {
   flex: 1;
   text-align: left;

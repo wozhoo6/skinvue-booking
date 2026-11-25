@@ -26,6 +26,15 @@ export function setPlaceHours(adminKey, placeId, periods) {
   return rpc('admin_set_place_hours', { p_admin_key: adminKey, p_place_id: placeId, p_periods: periods });
 }
 
+/**
+ * Disable or enable a place. A disabled place disappears from every public function
+ * (nearby, search, detail, booking requests) but stays in the admin list.
+ * Returns the refreshed admin_get_place object.
+ */
+export function setPlaceDisabled(adminKey, placeId, disabled) {
+  return rpc('admin_set_place_disabled', { p_admin_key: adminKey, p_place_id: placeId, p_disabled: disabled });
+}
+
 /** Add a doctor by name (npi is optional, 10 digits). */
 export function linkDermatologist(adminKey, placeId, name, npi) {
   return rpc('admin_link_dermatologist', {
